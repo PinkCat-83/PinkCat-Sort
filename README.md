@@ -25,10 +25,6 @@
 
 ## 🚀 Uso
 
-```bash
-python Ordenar.py
-```
-
 1. Selecciona una carpeta con el botón *Examinar* o arrastrándola a la zona de drop.
 2. Ajusta la tolerancia con el slider. Se recomienda un valor entre **80 y 90%**.
 3. Pulsa **Ordenar Archivos**.
@@ -39,11 +35,11 @@ python Ordenar.py
 
 ## 📁 Estructura del proyecto
 
-> ⚠️ Actualmente todo el código reside en `Ordenar.py`. En un futuro próximo se separará la lógica en módulos independientes.
+> ⚠️ Actualmente todo el código reside en `PinkCat Sort.py`. En un futuro próximo se separará la lógica en módulos independientes.
 
 ```
-pinkcat-sort/
-└── Ordenar.py
+PinkCat Sort/
+└── PinkCat Sort.py
 ```
 
 ---
