@@ -13,9 +13,8 @@ class FileSorterGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Ordenador de Archivos")
-        self.root.geometry("700x750")
-        self.root.resizable(True, True)
-        self.root.minsize(600, 600)
+        self.root.geometry("1100x750")
+        self.root.resizable(False, False)
 
         # Estado
         self.path_to_sort = tk.StringVar()
@@ -118,7 +117,11 @@ class FileSorterGUI:
 
     def log_status(self, message):
         self.status_text.config(state='normal')
-        self.status_text.insert(tk.END, message + '\n')
+        is_error = message.startswith(('⚠️', '❌'))
+        line_num = int(self.status_text.index(tk.END).split('.')[0])
+        self.status_text.insert(tk.END, message + '\n\n')
+        if is_error:
+            self.status_text.tag_add('error', f'{line_num}.0', f'{line_num}.end')
         self.status_text.see(tk.END)
         self.status_text.config(state='disabled')
         self.log_completo.append(message)

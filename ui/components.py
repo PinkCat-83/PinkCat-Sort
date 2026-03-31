@@ -22,9 +22,21 @@ def build_ui(app):
         bg=BG_COLOR, fg=TEXT_COLOR
     ).pack(pady=(0, 25))
 
+    # ── Contenedor de dos columnas ──────────────────────────────────────────
+    columns_frame = tk.Frame(main_frame, bg=BG_COLOR)
+    columns_frame.pack(fill=tk.BOTH, expand=True)
+
+    columns_frame.columnconfigure(0, weight=2)
+    columns_frame.columnconfigure(1, weight=3)
+    columns_frame.rowconfigure(0, weight=1)
+
+    # ── COLUMNA IZQUIERDA: configuración ────────────────────────────────────
+    left_frame = tk.Frame(columns_frame, bg=BG_COLOR, padx=(0), pady=0)
+    left_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 12))
+
     # Zona de arrastrar y soltar
     drop_frame = tk.Frame(
-        main_frame, bg=DROP_ZONE_COLOR,
+        left_frame, bg=DROP_ZONE_COLOR,
         relief=tk.SOLID, borderwidth=2, height=110
     )
     drop_frame.pack(fill=tk.X, pady=(0, 15))
@@ -40,19 +52,19 @@ def build_ui(app):
 
     # Carpeta seleccionada
     tk.Label(
-        main_frame, text="Carpeta seleccionada:",
+        left_frame, text="Carpeta seleccionada:",
         font=('Segoe UI', 10, 'bold'),
         bg=BG_COLOR, fg=TEXT_COLOR
     ).pack(anchor=tk.W, pady=(0, 5))
 
     ttk.Entry(
-        main_frame, textvariable=app.path_to_sort,
-        state='readonly', width=60, font=('Segoe UI', 9)
+        left_frame, textvariable=app.path_to_sort,
+        state='readonly', font=('Segoe UI', 9)
     ).pack(fill=tk.X, pady=(0, 15))
 
     # Botón examinar
     tk.Button(
-        main_frame, text="📂 Examinar",
+        left_frame, text="📂 Examinar",
         command=app.browse_folder,
         bg='white', fg=TEXT_COLOR,
         font=('Segoe UI', 10),
@@ -62,7 +74,7 @@ def build_ui(app):
 
     # Configuración de tolerancia
     config_frame = tk.LabelFrame(
-        main_frame, text=" ⚙️ Configuración ",
+        left_frame, text=" ⚙️ Configuración ",
         bg=BG_COLOR, fg=TEXT_COLOR,
         font=('Segoe UI', 10, 'bold'),
         relief=tk.SOLID, borderwidth=1,
@@ -104,7 +116,7 @@ def build_ui(app):
 
     # Botón ordenar
     app.sort_btn = tk.Button(
-        main_frame, text="🚀 Ordenar Archivos",
+        left_frame, text="🚀 Ordenar Archivos",
         command=app.start_sorting,
         bg=ACCENT_COLOR, fg='white',
         font=('Segoe UI', 12, 'bold'),
@@ -114,28 +126,34 @@ def build_ui(app):
     app.sort_btn.bind('<Enter>', lambda e: app.sort_btn.config(bg='#357abd'))
     app.sort_btn.bind('<Leave>', lambda e: app.sort_btn.config(bg=ACCENT_COLOR))
 
+    # ── COLUMNA DERECHA: progreso y resultados ──────────────────────────────
+    right_frame = tk.Frame(columns_frame, bg=BG_COLOR, pady=0)
+    right_frame.grid(row=0, column=1, sticky='nsew', padx=(12, 0))
+    right_frame.rowconfigure(1, weight=1)   # estado del proceso se expande
+    right_frame.rowconfigure(2, weight=1)   # archivos no movidos también
+
     # Barra de progreso
     tk.Label(
-        main_frame, text="Progreso:",
+        right_frame, text="Progreso:",
         bg=BG_COLOR, fg=TEXT_COLOR,
         font=('Segoe UI', 9, 'bold')
     ).pack(anchor=tk.W, pady=(0, 5))
 
     app.progress_bar = ttk.Progressbar(
-        main_frame, mode='determinate',
+        right_frame, mode='determinate',
         style="Pink.Horizontal.TProgressbar"
     )
     app.progress_bar.pack(fill=tk.X, pady=(0, 5))
 
     app.progress_label = tk.Label(
-        main_frame, text="0 / 0 archivos procesados",
+        right_frame, text="0 / 0 archivos procesados",
         bg=BG_COLOR, fg=MUTED_COLOR, font=('Segoe UI', 9)
     )
     app.progress_label.pack(anchor=tk.W, pady=(0, 15))
 
     # Panel de estado
     status_frame = tk.LabelFrame(
-        main_frame, text=" 📊 Estado del proceso ",
+        right_frame, text=" 📊 Estado del proceso ",
         bg=BG_COLOR, fg=TEXT_COLOR,
         font=('Segoe UI', 10, 'bold'),
         relief=tk.SOLID, borderwidth=1,
@@ -148,8 +166,10 @@ def build_ui(app):
         state='disabled', wrap=tk.WORD,
         font=('Consolas', 9),
         bg='#ffffff', fg=TEXT_COLOR,
-        relief=tk.FLAT, borderwidth=0
+        relief=tk.FLAT, borderwidth=0,
+        spacing3=6
     )
+    app.status_text.tag_configure('error', foreground=ERROR_COLOR)
     app.status_text.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
 
     status_scrollbar = ttk.Scrollbar(status_frame, orient=tk.VERTICAL, command=app.status_text.yview)
@@ -158,7 +178,7 @@ def build_ui(app):
 
     # Frame de archivos no movidos (oculto inicialmente)
     app.results_frame = tk.LabelFrame(
-        main_frame, text=" 📋 Archivos no movidos ",
+        right_frame, text=" 📋 Archivos no movidos ",
         bg=BG_COLOR, fg=TEXT_COLOR,
         font=('Segoe UI', 10, 'bold'),
         relief=tk.SOLID, borderwidth=1,

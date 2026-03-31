@@ -35,11 +35,16 @@
 
 ## 📁 Estructura del proyecto
 
-> ⚠️ Actualmente todo el código reside en `PinkCat Sort.py`. En un futuro próximo se separará la lógica en módulos independientes.
-
 ```
 PinkCat Sort/
-└── PinkCat Sort.py
+├── PinkCat Sort.py       # Punto de entrada
+├── app.py                # Clase principal FileSorterGUI
+├── core/
+│   ├── sorter.py         # Lógica de ordenación y coincidencia
+│   └── report.py         # Exportación del informe
+└── ui/
+    ├── components.py     # Construcción de la interfaz
+    └── styles.py         # Colores y estilos
 ```
 
 ---
