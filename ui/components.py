@@ -17,7 +17,7 @@ def build_ui(app):
 
     # Título
     tk.Label(
-        main_frame, text="📁 Ordenador de Archivos",
+        main_frame, text="📁 PinkCat Sort - Ordena tus archivos rápidamente",
         font=('Segoe UI', 20, 'bold'),
         bg=BG_COLOR, fg=TEXT_COLOR
     ).pack(pady=(0, 25))

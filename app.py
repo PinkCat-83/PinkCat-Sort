@@ -12,7 +12,7 @@ from core.report import save_report
 class FileSorterGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Ordenador de Archivos")
+        self.root.title("PinkCat Sort - Ordena tus archivos rápidamente")
         self.root.geometry("1100x750")
         self.root.resizable(False, False)
 
