@@ -1,21 +1,29 @@
 # 🐱🌸 PinkCat Sort
 
-**PinkCat Sort** es una aplicación de escritorio que organiza automáticamente archivos en carpetas usando coincidencia aproximada de nombres. Selecciona una carpeta, ajusta la tolerancia y deja que PinkCat Sort haga el resto.
+Desktop application that automatically organizes files into folders using approximate name matching. Select a folder, adjust the tolerance, and let PinkCat Sort do the rest.
 
 ---
 
-## ✨ Características
+## What is this?
 
-- 🗂️ **Arrastrar y soltar** — arrastra una carpeta directamente a la ventana
-- 🔍 **Coincidencia aproximada** — empareja archivos con carpetas aunque los nombres tengan pequeñas diferencias
-- ⚙️ **Tolerancia configurable** — ajusta el umbral de similitud (0–100%) para controlar la precisión
-- 📊 **Progreso en tiempo real** — barra de progreso y registro de estado durante la ordenación
-- 💾 **Exportar informe** — guarda el log completo como `.txt`
-- 🚫 **Los archivos `.py` se ignoran automáticamente**
+Students are required to include their full name in every file they submit. PinkCat Sort reads those filenames and automatically moves each file into the corresponding student's folder — even when names have small differences like typos, missing accents, or slight variations.
+
+This serves two purposes: it saves the teacher from sorting files manually, and it reinforces a real workplace habit. Consistent file naming conventions are standard practice in professional environments — and not following them is grounds for dismissal in many companies.
 
 ---
 
-## 🖥️ Requisitos
+## Features
+
+- **Drag & drop** — drag a folder directly onto the window
+- **Fuzzy matching** — matches files to folders even with small name differences
+- **Configurable tolerance** — adjust the similarity threshold (0–100%) to control precision
+- **Real-time progress** — progress bar and status log during sorting
+- **Export report** — saves the full log as `.txt`
+- **`.py` files are always ignored**
+
+---
+
+## Requirements
 
 - Python 3.8+
 - `tkinterdnd2`
@@ -23,33 +31,39 @@
 
 ---
 
-## 🚀 Uso
+## Usage
 
-1. Selecciona una carpeta con el botón *Examinar* o arrastrándola a la zona de drop.
-2. Ajusta la tolerancia con el slider. Se recomienda un valor entre **80 y 90%**.
-3. Pulsa **Ordenar Archivos**.
-4. Revisa el panel de estado para ver qué archivos se movieron y cuáles no.
-5. Opcionalmente, exporta el informe.
+1. Select a folder using the *Browse* button or drag it onto the drop zone.
+2. Adjust the tolerance slider. **80–90% is recommended.**
+3. Click **Ordenar Archivos**.
+4. Review the status panel to see which files were moved and which weren't.
+5. Optionally export the report.
 
 ---
 
-## 📁 Estructura del proyecto
+## File Structure
 
 ```
 PinkCat Sort/
-├── PinkCat Sort.py       # Punto de entrada
-├── app.py                # Clase principal FileSorterGUI
+├── PinkCat Sort.py       # Entry point
+├── app.py                # Main FileSorterGUI class
 ├── core/
-│   ├── sorter.py         # Lógica de ordenación y coincidencia
-│   └── report.py         # Exportación del informe
+│   ├── sorter.py         # Sorting and matching logic
+│   └── report.py         # Report export
 └── ui/
-    ├── components.py     # Construcción de la interfaz
-    └── styles.py         # Colores y estilos
+    ├── components.py     # Interface construction
+    └── styles.py         # Colors and styles
 ```
 
 ---
 
-## ⚠️ Notas
+## Notes
 
-- Solo se procesan los archivos en el **primer nivel** de la carpeta seleccionada, sin entrar en subcarpetas.
-- Si un archivo no encuentra ninguna carpeta con suficiente similitud, aparecerá en la sección de archivos no movidos.
+- Only files in the **first level** of the selected folder are processed — subfolders are not entered.
+- Files with no folder match above the threshold appear in the unmatched section of the report.
+
+---
+
+## Technical Documentation
+
+→ [Technical README](./README_TECH.md)
