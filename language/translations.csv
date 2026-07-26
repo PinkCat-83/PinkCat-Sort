@@ -1,0 +1,28 @@
+key;Español;English;Portugês;Français;Deutsch;Italiano;日本語;Nyan
+app_title;PinkCat Sort;PinkCat Sort;PinkCat Sort;PinkCat Sort;PinkCat Sort;PinkCat Sort;PinkCat Sort;PinkCat Nyart
+app_subtitle;Ordena tus archivos rápidamente;Sort your files quickly;Ordene seus arquivos rapidamente;Trier vos fichiers rapidement;Sortiere deine Dateien schnell;Ordina i tuoi file rapidamente;ファイルを素早く整理;Nyartea tus archivos miau
+drop_zone_hint;Arrastra aquí la carpeta a ordenar o haz clic en 'Examinar';Drag the folder to sort here or click 'Browse';Arraste a pasta para ordenar aqui ou clique em 'Procurar';Faites glisser le dossier à trier ici ou cliquez sur 'Parcourir';Ziehe den Ordner hierher oder klicke auf 'Durchsuchen';Trascina la cartella qui o clicca su 'Sfoglia';ここにフォルダをドラッグ または「参照」をクリック;Arrastra el miau-folder aquí o haz clic en 'Nyawsar'
+folder_selected_label;Carpeta seleccionada:;Selected folder:;Pasta selecionada:;Dossier sélectionné :;Ausgewählter Ordner:;Cartella selezionata:;選択フォルダー:;Miau-folder seleccionado:
+btn_browse;📂 Examinar;📂 Browse;📂 Procurar;📂 Parcourir;📂 Durchsuchen;📂 Sfoglia;📂 参照;📂 Nyawsar
+section_config;⚙️ Configuración;⚙️ Configuration;⚙️ Configuração;⚙️ Configuration;⚙️ Konfiguration;⚙️ Configurazione;⚙️ 設定;⚙️ Nyan-figuración
+tolerance_label;Tolerancia de similitud:;Similarity tolerance:;Tolerância de similaridade:;Tolérance de similarité :;Ähnlichkeitstoleranz:;Tolleranza di similarità:;類似度の許容範囲:;Nyan-tolerancia:
+tolerance_hint;Define qué tan similares deben ser los nombres. Valor mayor = mayor precisión (80–90 recomendado);Defines how similar names must be. Higher = more precision required (80–90 recommended);Define quão similares os nomes devem ser. Maior valor = maior precisão (80–90 recomendado);Définit la similitude requise entre les noms. Plus élevé = plus de précision (80–90 recommandé);Legt fest, wie ähnlich Namen sein müssen. Höher = mehr Präzision erforderlich (80–90 empfohlen);Definisce la somiglianza richiesta tra i nomi. Più alto = più precisione (80–90 raccomandato);名前の類似度を定義します。 高いほど精度が上がります（80〜90推奨）;Define qué tan miau-similares deben ser. 80–90 recomendado, purr
+btn_sort;🚀 Ordenar Archivos;🚀 Sort Files;🚀 Ordenar Arquivos;🚀 Trier les fichiers;🚀 Dateien sortieren;🚀 Ordina file;🚀 ファイルを整理;🚀 Nyan-ordenar Archivos
+section_progress;Progreso:;Progress:;Progresso:;Progression :;Fortschritt:;Progresso:;進捗:;Miau-progreso:
+progress_count;{done} / {total} archivos procesados;{done} / {total} files processed;{done} / {total} arquivos processados;{done} / {total} fichiers traités;{done} / {total} Dateien verarbeitet;{done} / {total} file elaborati;{done} / {total} 件処理済み;{done} / {total} miau-archivos nyarteados
+section_status;📊 Estado del proceso;📊 Process status;📊 Estado do processo;📊 État du processus;📊 Prozessstatus;📊 Stato del processo;📊 処理状況;📊 Miau-estado del proceso
+section_unmoved;📋 Archivos no movidos;📋 Unmoved files;📋 Arquivos não movidos;📋 Fichiers non déplacés;📋 Nicht verschobene Dateien;📋 File non spostati;📋 移動されなかったファイル;📋 Archivos sin nyan-mover
+btn_export;💾 Exportar Reporte a TXT;💾 Export Report to TXT;💾 Exportar Relatório para TXT;💾 Exporter le rapport en TXT;💾 Bericht als TXT exportieren;💾 Esporta report in TXT;💾 TXTレポートを出力;💾 Exportar miau-reporte a TXT
+log_start_header;INICIANDO PROCESO DE ORDENACIÓN;STARTING SORT PROCESS;INICIANDO PROCESSO DE ORDENAÇÃO;DÉMARRAGE DU PROCESSUS DE TRI;SORTIERPROZESS WIRD GESTARTET;AVVIO DEL PROCESSO DI ORDINAMENTO;整理プロセスを開始;INICIANDO NYAN-ORDENACIÓN
+log_complete_header;PROCESO COMPLETADO;PROCESS COMPLETED;PROCESSO CONCLUÍDO;PROCESSUS TERMINÉ;PROZESS ABGESCHLOSSEN;PROCESSO COMPLETATO;処理完了;NYAN-PROCESO COMPLETADO, PURR
+log_total_files;Total de archivos encontrados:;Total files found:;Total de arquivos encontrados:;Total de fichiers trouvés :;Gefundene Dateien:;File trovati in totale:;見つかったファイル数:;Total miau-archivos:
+log_tolerance;Tolerancia configurada:;Configured tolerance:;Tolerância configurada:;Tolérance configurée :;Konfigurierte Toleranz:;Tolleranza configurata:;設定された許容範囲:;Nyan-tolerancia:
+log_moving;Moviendo;Moving;Movendo;Déplacement de;Verschiebe;Spostando;移動中;Nyarteando
+log_no_dest;Sin destino para;No destination for;Sem destino para;Aucune destination pour;Kein Ziel für;Nessuna destinazione per;移動先なし:;Sin miau-destino para
+log_error_file;Error con;Error with;Erro com;Erreur avec;Fehler bei;Errore con;エラー:;Miau-error con
+log_moved_count;Archivos movidos:;Files moved:;Arquivos movidos:;Fichiers déplacés :;Verschobene Dateien:;File spostati:;移動したファイル数:;Archivos miau-movidos:
+log_ignored_count;Archivos ignorados:;Ignored files:;Arquivos ignorados:;Fichiers ignorés :;Ignorierte Dateien:;File ignorati:;無視したファイル数:;Archivos nyan-ignorados:
+error_no_folder;Por favor selecciona una carpeta primero.;Please select a folder first.;Por favor, selecione uma pasta primeiro.;Veuillez d'abord sélectionner un dossier.;Bitte zuerst einen Ordner auswählen.;Seleziona prima una cartella.;まずフォルダを選択してください。;Pon un miau-folder primero, purr.
+error_title;Error;Error;Erro;Erreur;Fehler;Errore;エラー;Miau-error
+warning_title;Aviso;Warning;Aviso;Avertissement;Warnung;Avviso;警告;Miau-aviso
+lang_selector_label;Idioma:;Language:;Idioma:;Langue :;Sprache:;Lingua:;言語:;Nyan-idioma:

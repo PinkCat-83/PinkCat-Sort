@@ -1,213 +1,395 @@
+"""
+ui/components.py — Construcción de la interfaz de PinkCat Sort con CustomTkinter.
+
+Reglas de arquitectura (ver README_TECH.md):
+  · Este módulo sólo construye widgets y los asocia a `app`.
+  · La lógica de matching/sorting vive exclusivamente en core/sorter.py.
+  · Los estilos y colores provienen de ui/styles.py.
+  · Los textos provienen de app.t (instancia de language.i18n.I18n).
+"""
+
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+import customtkinter as ctk
 from tkinterdnd2 import DND_FILES
 from ui.styles import (
-    BG_COLOR, ACCENT_COLOR, DROP_ZONE_COLOR,
-    TEXT_COLOR, MUTED_COLOR, SUCCESS_COLOR, ERROR_COLOR
+    BG_APP, BG_SURFACE, BG_CARD, BG_INPUT, BG_DROP,
+    ACCENT, ACCENT_HOVER, ACCENT_LIGHT, ACCENT2,
+    TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED,
+    SUCCESS, SUCCESS_HOVER, ERROR,
+    BORDER,
+    RADIUS_SM, RADIUS_MD, RADIUS_LG,
+    PAD_XS, PAD_SM, PAD_MD, PAD_LG,
 )
 
+# ── Fuentes como CTkFont (único método fiable en Windows) ────────────────────
+# Se crean aquí a nivel de módulo; CTkFont requiere que Tk exista, así que se
+# instancian en build_ui() la primera vez y se guardan en este dict.
+_F = {}
+
+def _init_fonts():
+    if _F:
+        return
+    _F["title"]    = ctk.CTkFont(family="Segoe UI", size=26, weight="bold")
+    _F["subtitle"] = ctk.CTkFont(family="Segoe UI", size=16)
+    _F["label"]    = ctk.CTkFont(family="Segoe UI", size=16, weight="bold")
+    _F["body"]     = ctk.CTkFont(family="Segoe UI", size=15)
+    _F["small"]    = ctk.CTkFont(family="Segoe UI", size=14)
+    _F["mono"]     = ctk.CTkFont(family="Consolas",  size=14)
+    _F["pct"]      = ctk.CTkFont(family="Segoe UI", size=18, weight="bold")
+    _F["lang"]     = ctk.CTkFont(family="Segoe UI", size=16)
+
+
+# ── Helpers internos ─────────────────────────────────────────────────────────
+
+def _frame(parent, fg=BG_SURFACE, **kw):
+    return ctk.CTkFrame(parent, fg_color=fg, **kw)
+
+
+def _label(parent, text, font_key="body", color=TEXT_PRIMARY, **kw):
+    return ctk.CTkLabel(parent, text=text, font=_F[font_key], text_color=color, **kw)
+
+
+def _separator(parent):
+    return tk.Frame(parent, bg=BORDER, height=1)
+
+
+# ── Punto de entrada principal ───────────────────────────────────────────────
 
 def build_ui(app):
-    """Construye todos los widgets de la interfaz y los asocia a `app`."""
+    _init_fonts()
+    t    = app.t
     root = app.root
-    root.configure(bg=BG_COLOR)
 
-    main_frame = tk.Frame(root, bg=BG_COLOR, padx=25, pady=20)
-    main_frame.pack(fill=tk.BOTH, expand=True)
+    root.configure(bg=BG_APP)
+    root.option_add("*tearOff", False)
 
-    # Título
-    tk.Label(
-        main_frame, text="📁 PinkCat Sort - Ordena tus archivos rápidamente",
-        font=('Segoe UI', 20, 'bold'),
-        bg=BG_COLOR, fg=TEXT_COLOR
-    ).pack(pady=(0, 25))
+    wrapper = _frame(root, fg=BG_APP)
+    wrapper.pack(fill=tk.BOTH, expand=True, padx=PAD_LG, pady=PAD_LG)
 
-    # ── Contenedor de dos columnas ──────────────────────────────────────────
-    columns_frame = tk.Frame(main_frame, bg=BG_COLOR)
-    columns_frame.pack(fill=tk.BOTH, expand=True)
+    _build_header(app, wrapper, t)
 
-    columns_frame.columnconfigure(0, weight=2)
-    columns_frame.columnconfigure(1, weight=3)
-    columns_frame.rowconfigure(0, weight=1)
+    body = _frame(wrapper, fg=BG_APP)
+    body.pack(fill=tk.BOTH, expand=True, pady=(PAD_MD, 0))
+    body.columnconfigure(0, weight=2, minsize=380)
+    body.columnconfigure(1, weight=3)
+    body.rowconfigure(0, weight=1)
 
-    # ── COLUMNA IZQUIERDA: configuración ────────────────────────────────────
-    left_frame = tk.Frame(columns_frame, bg=BG_COLOR, padx=(0), pady=0)
-    left_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 12))
+    left = _frame(body, fg=BG_APP)
+    left.grid(row=0, column=0, sticky="nsew", padx=(0, PAD_MD))
 
-    # Zona de arrastrar y soltar
-    drop_frame = tk.Frame(
-        left_frame, bg=DROP_ZONE_COLOR,
-        relief=tk.SOLID, borderwidth=2, height=110
+    right = _frame(body, fg=BG_APP)
+    right.grid(row=0, column=1, sticky="nsew")
+    right.rowconfigure(2, weight=1)
+    right.rowconfigure(4, weight=1)
+
+    _build_left(app, left, t)
+    _build_right(app, right, t)
+
+
+# ── Cabecera ─────────────────────────────────────────────────────────────────
+
+def _build_header(app, parent, t):
+    header = _frame(parent, fg=BG_SURFACE, corner_radius=RADIUS_LG)
+    header.pack(fill=tk.X, pady=(0, PAD_MD))
+
+    inner = _frame(header, fg=BG_SURFACE)
+    inner.pack(fill=tk.BOTH, expand=True, padx=PAD_LG, pady=PAD_MD)
+
+    left_h = _frame(inner, fg=BG_SURFACE)
+    left_h.pack(side=tk.LEFT, fill=tk.Y)
+
+    title_col = _frame(left_h, fg=BG_SURFACE)
+    title_col.pack(side=tk.LEFT)
+
+    app._lbl_title = _label(title_col, t("app_title"), font_key="title", color=TEXT_PRIMARY)
+    app._lbl_title.pack(anchor=tk.W)
+
+    app._lbl_subtitle = _label(title_col, t("app_subtitle"), font_key="subtitle", color=TEXT_SECONDARY)
+    app._lbl_subtitle.pack(anchor=tk.W, pady=(2, 0))
+
+    right_h = _frame(inner, fg=BG_SURFACE)
+    right_h.pack(side=tk.RIGHT)
+
+    app._lbl_lang = _label(right_h, t("lang_selector_label"), font_key="small", color=TEXT_MUTED)
+    app._lbl_lang.pack(anchor=tk.E)
+
+    app.lang_var = tk.StringVar(value=app.t.language)
+    app._lang_menu = ctk.CTkOptionMenu(
+        right_h,
+        values=app.t.languages,
+        variable=app.lang_var,
+        command=app._on_language_change,
+        width=220,
+        height=40,
+        fg_color=BG_CARD,
+        button_color=ACCENT,
+        button_hover_color=ACCENT_HOVER,
+        text_color=TEXT_PRIMARY,
+        font=_F["lang"],
+        dropdown_font=_F["lang"],
+        dropdown_fg_color=BG_SURFACE,
+        dropdown_hover_color=BG_CARD,
+        dropdown_text_color=TEXT_PRIMARY,
+        corner_radius=RADIUS_SM,
     )
-    drop_frame.pack(fill=tk.X, pady=(0, 15))
-    drop_frame.pack_propagate(False)
-    drop_frame.drop_target_register(DND_FILES)
-    drop_frame.dnd_bind('<<Drop>>', app.on_drop)
+    app._lang_menu.pack(pady=(4, 0))
 
-    tk.Label(
-        drop_frame,
-        text="🗂️\n\nArrastra aquí la carpeta a ordenar\no haz clic en 'Examinar'",
-        bg=DROP_ZONE_COLOR, font=('Segoe UI', 11), fg=MUTED_COLOR
-    ).place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
-    # Carpeta seleccionada
-    tk.Label(
-        left_frame, text="Carpeta seleccionada:",
-        font=('Segoe UI', 10, 'bold'),
-        bg=BG_COLOR, fg=TEXT_COLOR
-    ).pack(anchor=tk.W, pady=(0, 5))
+# ── Columna izquierda ────────────────────────────────────────────────────────
 
-    ttk.Entry(
-        left_frame, textvariable=app.path_to_sort,
-        state='readonly', font=('Segoe UI', 9)
-    ).pack(fill=tk.X, pady=(0, 15))
+def _build_left(app, parent, t):
+    # Drop zone
+    drop_card = _frame(parent, fg=BG_DROP, corner_radius=RADIUS_LG)
+    drop_card.pack(fill=tk.X, pady=(0, PAD_MD))
+    drop_card.configure(height=120)
+    drop_card.pack_propagate(False)
 
-    # Botón examinar
-    tk.Button(
-        left_frame, text="📂 Examinar",
+    drop_card.drop_target_register(DND_FILES)
+    drop_card.dnd_bind("<<Drop>>", app.on_drop)
+
+    drop_inner = _frame(drop_card, fg=BG_DROP)
+    drop_inner.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+
+    ctk.CTkLabel(
+        drop_inner, text="🗂️",
+        font=ctk.CTkFont(family="Segoe UI Emoji", size=28),
+        text_color=ACCENT2
+    ).pack()
+
+    app._lbl_drop = _label(drop_inner, t("drop_zone_hint"), font_key="small", color=TEXT_MUTED, justify=tk.CENTER)
+    app._lbl_drop.pack(pady=(4, 0))
+
+    # Ruta seleccionada
+    app._lbl_folder = _label(parent, t("folder_selected_label"), font_key="small", color=TEXT_MUTED)
+    app._lbl_folder.pack(anchor=tk.W, pady=(0, PAD_XS))
+
+    app._entry_path = ctk.CTkEntry(
+        parent,
+        textvariable=app.path_to_sort,
+        state="readonly",
+        font=_F["small"],
+        fg_color=BG_INPUT,
+        border_color=BORDER,
+        text_color=TEXT_SECONDARY,
+        corner_radius=RADIUS_SM,
+        height=34,
+    )
+    app._entry_path.pack(fill=tk.X, pady=(0, PAD_SM))
+
+    # Botón Examinar
+    app._btn_browse = ctk.CTkButton(
+        parent,
+        text=t("btn_browse"),
         command=app.browse_folder,
-        bg='white', fg=TEXT_COLOR,
-        font=('Segoe UI', 10),
-        relief=tk.SOLID, borderwidth=1,
-        padx=20, pady=8, cursor='hand2'
-    ).pack(pady=(0, 20))
-
-    # Configuración de tolerancia
-    config_frame = tk.LabelFrame(
-        left_frame, text=" ⚙️ Configuración ",
-        bg=BG_COLOR, fg=TEXT_COLOR,
-        font=('Segoe UI', 10, 'bold'),
-        relief=tk.SOLID, borderwidth=1,
-        padx=15, pady=15
+        fg_color=BG_CARD,
+        hover_color=BG_SURFACE,
+        text_color=ACCENT2,
+        border_color=BORDER,
+        border_width=1,
+        font=_F["body"],
+        corner_radius=RADIUS_SM,
+        height=36,
     )
-    config_frame.pack(fill=tk.X, pady=(0, 20))
+    app._btn_browse.pack(fill=tk.X, pady=(0, PAD_LG))
 
-    tk.Label(
-        config_frame, text="Tolerancia de similitud:",
-        bg=BG_COLOR, fg=TEXT_COLOR,
-        font=('Segoe UI', 10, 'bold')
-    ).pack(anchor=tk.W)
+    _separator(parent).pack(fill=tk.X, pady=(0, PAD_LG))
 
-    tk.Label(
-        config_frame,
-        text=(
-            "Define qué tan similares deben ser los nombres para mover archivos.\n"
-            "Mayor valor = mayor precisión requerida (80-90 recomendado)"
-        ),
-        bg=BG_COLOR, fg=MUTED_COLOR,
-        font=('Segoe UI', 9), justify=tk.LEFT
-    ).pack(anchor=tk.W, pady=(3, 10))
+    # Configuración tolerancia
+    config_card = _frame(parent, fg=BG_SURFACE, corner_radius=RADIUS_LG)
+    config_card.pack(fill=tk.X, pady=(0, PAD_LG))
 
-    slider_frame = tk.Frame(config_frame, bg=BG_COLOR)
-    slider_frame.pack(fill=tk.X)
+    cfg_inner = _frame(config_card, fg=BG_SURFACE)
+    cfg_inner.pack(fill=tk.BOTH, padx=PAD_MD, pady=PAD_MD)
 
-    ttk.Scale(
-        slider_frame, from_=0, to=100,
-        variable=app.tolerancia, orient=tk.HORIZONTAL
-    ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+    app._lbl_config = _label(cfg_inner, t("section_config"), font_key="label", color=ACCENT2)
+    app._lbl_config.pack(anchor=tk.W, pady=(0, PAD_SM))
 
-    app.tolerance_label = tk.Label(
-        slider_frame, text="80%",
-        font=('Segoe UI', 11, 'bold'),
-        bg=BG_COLOR, fg=ACCENT_COLOR, width=5
+    app._lbl_tolerance = _label(cfg_inner, t("tolerance_label"), font_key="body", color=TEXT_PRIMARY)
+    app._lbl_tolerance.pack(anchor=tk.W)
+
+    app._lbl_tol_hint = _label(
+        cfg_inner, t("tolerance_hint"),
+        font_key="small", color=TEXT_MUTED, justify=tk.LEFT, wraplength=340
     )
-    app.tolerance_label.pack(side=tk.RIGHT)
-    app.tolerancia.trace_add('write', app.update_tolerance_label)
+    app._lbl_tol_hint.pack(anchor=tk.W, pady=(2, PAD_SM))
 
-    # Botón ordenar
-    app.sort_btn = tk.Button(
-        left_frame, text="🚀 Ordenar Archivos",
+    slider_row = _frame(cfg_inner, fg=BG_SURFACE)
+    slider_row.pack(fill=tk.X)
+
+    app._slider = ctk.CTkSlider(
+        slider_row,
+        from_=0, to=100,
+        variable=app.tolerancia,
+        progress_color=ACCENT,
+        button_color=ACCENT,
+        button_hover_color=ACCENT_LIGHT,
+        fg_color=BG_INPUT,
+        corner_radius=4,
+        height=16,
+    )
+    app._slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, PAD_SM))
+
+    app.tolerance_label = _label(slider_row, "80%", font_key="pct", color=ACCENT)
+    app.tolerance_label.pack(side=tk.RIGHT, anchor=tk.CENTER)
+    app.tolerancia.trace_add("write", app.update_tolerance_label)
+
+    _separator(parent).pack(fill=tk.X, pady=(0, PAD_LG))
+
+    # Botón Ordenar
+    app.sort_btn = ctk.CTkButton(
+        parent,
+        text=t("btn_sort"),
         command=app.start_sorting,
-        bg=ACCENT_COLOR, fg='white',
-        font=('Segoe UI', 12, 'bold'),
-        relief=tk.FLAT, padx=30, pady=12, cursor='hand2'
+        fg_color=ACCENT,
+        hover_color=ACCENT_HOVER,
+        text_color="#ffffff",
+        font=_F["label"],
+        corner_radius=RADIUS_MD,
+        height=46,
     )
-    app.sort_btn.pack(pady=(0, 20))
-    app.sort_btn.bind('<Enter>', lambda e: app.sort_btn.config(bg='#357abd'))
-    app.sort_btn.bind('<Leave>', lambda e: app.sort_btn.config(bg=ACCENT_COLOR))
+    app.sort_btn.pack(fill=tk.X)
 
-    # ── COLUMNA DERECHA: progreso y resultados ──────────────────────────────
-    right_frame = tk.Frame(columns_frame, bg=BG_COLOR, pady=0)
-    right_frame.grid(row=0, column=1, sticky='nsew', padx=(12, 0))
-    right_frame.rowconfigure(1, weight=1)   # estado del proceso se expande
-    right_frame.rowconfigure(2, weight=1)   # archivos no movidos también
 
-    # Barra de progreso
-    tk.Label(
-        right_frame, text="Progreso:",
-        bg=BG_COLOR, fg=TEXT_COLOR,
-        font=('Segoe UI', 9, 'bold')
-    ).pack(anchor=tk.W, pady=(0, 5))
+# ── Columna derecha ───────────────────────────────────────────────────────────
 
-    app.progress_bar = ttk.Progressbar(
-        right_frame, mode='determinate',
-        style="Pink.Horizontal.TProgressbar"
+def _build_right(app, parent, t):
+    # Progreso
+    prog_card = _frame(parent, fg=BG_SURFACE, corner_radius=RADIUS_LG)
+    prog_card.pack(fill=tk.X, pady=(0, PAD_MD))
+    prog_inner = _frame(prog_card, fg=BG_SURFACE)
+    prog_inner.pack(fill=tk.BOTH, padx=PAD_MD, pady=PAD_MD)
+
+    prog_header = _frame(prog_inner, fg=BG_SURFACE)
+    prog_header.pack(fill=tk.X, pady=(0, PAD_SM))
+
+    app._lbl_progress_title = _label(prog_header, t("section_progress"), font_key="label", color=TEXT_SECONDARY)
+    app._lbl_progress_title.pack(side=tk.LEFT)
+
+    app.progress_label = _label(
+        prog_header,
+        t("progress_count", done=0, total=0),
+        font_key="small", color=TEXT_MUTED
     )
-    app.progress_bar.pack(fill=tk.X, pady=(0, 5))
+    app.progress_label.pack(side=tk.RIGHT)
 
-    app.progress_label = tk.Label(
-        right_frame, text="0 / 0 archivos procesados",
-        bg=BG_COLOR, fg=MUTED_COLOR, font=('Segoe UI', 9)
+    app.progress_bar = ctk.CTkProgressBar(
+        prog_inner,
+        progress_color=ACCENT2,
+        fg_color=BG_INPUT,
+        corner_radius=4,
+        height=10,
     )
-    app.progress_label.pack(anchor=tk.W, pady=(0, 15))
+    app.progress_bar.set(0)
+    app.progress_bar.pack(fill=tk.X)
 
     # Panel de estado
-    status_frame = tk.LabelFrame(
-        right_frame, text=" 📊 Estado del proceso ",
-        bg=BG_COLOR, fg=TEXT_COLOR,
-        font=('Segoe UI', 10, 'bold'),
-        relief=tk.SOLID, borderwidth=1,
-        padx=10, pady=10
-    )
-    status_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+    _separator(parent).pack(fill=tk.X, pady=(0, PAD_MD))
+
+    status_lbl_row = _frame(parent, fg=BG_APP)
+    status_lbl_row.pack(fill=tk.X, pady=(0, PAD_XS))
+
+    app._lbl_status_section = _label(status_lbl_row, t("section_status"), font_key="label", color=TEXT_SECONDARY)
+    app._lbl_status_section.pack(anchor=tk.W)
+
+    status_card = _frame(parent, fg=BG_CARD, corner_radius=RADIUS_MD)
+    status_card.pack(fill=tk.BOTH, expand=True, pady=(0, PAD_MD))
+
+    status_inner = _frame(status_card, fg=BG_CARD)
+    status_inner.pack(fill=tk.BOTH, expand=True, padx=PAD_SM, pady=PAD_SM)
 
     app.status_text = tk.Text(
-        status_frame, height=8,
-        state='disabled', wrap=tk.WORD,
-        font=('Consolas', 9),
-        bg='#ffffff', fg=TEXT_COLOR,
-        relief=tk.FLAT, borderwidth=0,
-        spacing3=6
+        status_inner,
+        state="disabled",
+        wrap=tk.WORD,
+        font=("Consolas", 14),
+        bg=BG_CARD,
+        fg=TEXT_PRIMARY,
+        insertbackground=TEXT_PRIMARY,
+        selectbackground=ACCENT,
+        relief=tk.FLAT,
+        borderwidth=0,
+        spacing3=4,
     )
-    app.status_text.tag_configure('error', foreground=ERROR_COLOR)
+    app.status_text.tag_configure("error",   foreground=ERROR)
+    app.status_text.tag_configure("success", foreground=SUCCESS)
+    app.status_text.tag_configure("accent",  foreground=ACCENT2)
+    app.status_text.tag_configure("muted",   foreground=TEXT_MUTED)
+
+    scrollbar_s = ctk.CTkScrollbar(
+        status_inner, command=app.status_text.yview,
+        fg_color=BG_CARD, button_color=BORDER, button_hover_color=ACCENT
+    )
+    scrollbar_s.pack(side=tk.RIGHT, fill=tk.Y)
+    app.status_text.config(yscrollcommand=scrollbar_s.set)
     app.status_text.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
 
-    status_scrollbar = ttk.Scrollbar(status_frame, orient=tk.VERTICAL, command=app.status_text.yview)
-    status_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    app.status_text.config(yscrollcommand=status_scrollbar.set)
+    # Panel archivos no movidos (oculto hasta resultados)
+    app._lbl_unmoved_section = _label(parent, t("section_unmoved"), font_key="label", color=TEXT_SECONDARY)
 
-    # Frame de archivos no movidos (oculto inicialmente)
-    app.results_frame = tk.LabelFrame(
-        right_frame, text=" 📋 Archivos no movidos ",
-        bg=BG_COLOR, fg=TEXT_COLOR,
-        font=('Segoe UI', 10, 'bold'),
-        relief=tk.SOLID, borderwidth=1,
-        padx=10, pady=10
-    )
+    app.results_frame = _frame(parent, fg=BG_CARD, corner_radius=RADIUS_MD)
 
-    list_frame = tk.Frame(app.results_frame, bg='#ffffff')
-    list_frame.pack(fill=tk.BOTH, expand=True)
+    unmoved_inner = _frame(app.results_frame, fg=BG_CARD)
+    unmoved_inner.pack(fill=tk.BOTH, expand=True, padx=PAD_SM, pady=PAD_SM)
 
     app.unmoved_text = tk.Text(
-        list_frame, height=6,
-        state='disabled', wrap=tk.WORD,
-        font=('Consolas', 9),
-        bg='#ffffff', fg=ERROR_COLOR,
-        relief=tk.FLAT, borderwidth=0
+        unmoved_inner,
+        height=6,
+        state="disabled",
+        wrap=tk.WORD,
+        font=("Consolas", 14),
+        bg=BG_CARD,
+        fg=ERROR,
+        insertbackground=TEXT_PRIMARY,
+        relief=tk.FLAT,
+        borderwidth=0,
     )
+    scrollbar_u = ctk.CTkScrollbar(
+        unmoved_inner, command=app.unmoved_text.yview,
+        fg_color=BG_CARD, button_color=BORDER, button_hover_color=ACCENT
+    )
+    scrollbar_u.pack(side=tk.RIGHT, fill=tk.Y)
+    app.unmoved_text.config(yscrollcommand=scrollbar_u.set)
     app.unmoved_text.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
 
-    unmoved_scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=app.unmoved_text.yview)
-    unmoved_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    app.unmoved_text.config(yscrollcommand=unmoved_scrollbar.set)
-
-    app.export_btn = tk.Button(
-        app.results_frame, text="💾 Exportar Reporte a TXT",
+    app.export_btn = ctk.CTkButton(
+        app.results_frame,
+        text=t("btn_export"),
         command=app.export_report,
-        bg=SUCCESS_COLOR, fg='white',
-        font=('Segoe UI', 10, 'bold'),
-        relief=tk.FLAT, padx=20, pady=8, cursor='hand2'
+        fg_color=SUCCESS,
+        hover_color=SUCCESS_HOVER,
+        text_color="#ffffff",
+        font=_F["label"],
+        corner_radius=RADIUS_MD,
+        height=40,
     )
-    app.export_btn.pack(pady=(10, 0))
-    app.export_btn.bind('<Enter>', lambda e: app.export_btn.config(bg='#229954'))
-    app.export_btn.bind('<Leave>', lambda e: app.export_btn.config(bg=SUCCESS_COLOR))
+    app.export_btn.pack(fill=tk.X, padx=PAD_SM, pady=(PAD_SM, PAD_SM))
+
+
+# ── Refresco i18n ─────────────────────────────────────────────────────────────
+
+def refresh_ui_texts(app):
+    t = app.t
+
+    app._lbl_title.configure(text=t("app_title"))
+    app._lbl_subtitle.configure(text=t("app_subtitle"))
+    app._lbl_lang.configure(text=t("lang_selector_label"))
+
+    app._lbl_drop.configure(text=t("drop_zone_hint"))
+    app._lbl_folder.configure(text=t("folder_selected_label"))
+    app._btn_browse.configure(text=t("btn_browse"))
+    app._lbl_config.configure(text=t("section_config"))
+    app._lbl_tolerance.configure(text=t("tolerance_label"))
+    app._lbl_tol_hint.configure(text=t("tolerance_hint"))
+    app.sort_btn.configure(text=t("btn_sort"))
+
+    app._lbl_progress_title.configure(text=t("section_progress"))
+    app._lbl_status_section.configure(text=t("section_status"))
+    app._lbl_unmoved_section.configure(text=t("section_unmoved"))
+    app.export_btn.configure(text=t("btn_export"))
+
+    try:
+        done  = app._progress_done
+        total = app._progress_total
+    except AttributeError:
+        done = total = 0
+    app.progress_label.configure(text=t("progress_count", done=done, total=total))
