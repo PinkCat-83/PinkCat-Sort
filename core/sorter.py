@@ -1,88 +1,95 @@
-import shutil
 import os
+import shutil
 import unicodedata
-from rapidfuzz import process, fuzz
+
+from rapidfuzz import fuzz, process
 
 
-def sort_files(path, tolerancia, on_progress, on_log):
+def sort_files(path, tolerance, on_progress, on_log, t):
     """
-    Recorre los archivos de `path` y los mueve a la carpeta más similar.
+    Scan the first level of `path` and move each file into its best-matching folder.
 
-    Parámetros:
-        path        -- ruta de la carpeta a ordenar
-        tolerancia  -- umbral mínimo de similitud (0-100)
-        on_progress -- callback(procesados, total) para actualizar el progreso
-        on_log      -- callback(mensaje) para emitir mensajes de estado
+    Parameters:
+        path        -- folder to sort
+        tolerance   -- minimum similarity threshold (0-100)
+        on_progress -- callback(processed, total) for progress updates
+        on_log      -- callback(message) for status messages
+        t           -- translate callable, t(key, **kwargs) -> str
 
-    Devuelve un dict con las claves:
-        movidos         -- número de archivos movidos
-        ignorados       -- número de archivos no movidos
-        no_movidos      -- lista de strings describiendo cada archivo no movido
+    Returns a dict with:
+        moved    -- number of files moved
+        ignored  -- number of files not moved
+        unmoved  -- list of dicts: {file, folder, score, reason, error?}
+                    reason is one of: "low_score" | "no_folders" | "py_file" | "error"
     """
     file_names = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     total = len(file_names)
-    procesados = 0
-    movidos = 0
-    ignorados = 0
-    no_movidos = []
+    processed = 0
+    moved = 0
+    ignored = 0
+    unmoved = []
 
     on_log("\n" + "=" * 50)
-    on_log("🚀 INICIANDO PROCESO DE ORDENACIÓN")
+    on_log(t("log_start_header"))
     on_log("=" * 50)
-    on_log(f"📊 Total de archivos encontrados: {total}")
-    on_log(f"⚙️ Tolerancia configurada: {tolerancia}%\n")
+    on_log(t("log_total_files", total=total))
+    on_log(t("log_tolerance", tolerance=tolerance) + "\n")
     on_progress(0, total)
 
     for file_name in file_names:
-        origen = os.path.join(path, file_name)
+        source = os.path.join(path, file_name)
         try:
             if file_name.endswith(".py"):
-                no_movidos.append(f"{file_name} (archivo .py - ignorado)")
-                ignorados += 1
+                unmoved.append({"file": file_name, "folder": None, "score": None, "reason": "py_file"})
+                ignored += 1
             else:
                 folder_name = _find_best_folder(file_name, path)
-                score = fuzz.ratio(normalize_text(file_name), normalize_text(folder_name))
-
-                score_fmt = f"{score:.2f}"
-                if folder_name != "ERROR" and score >= tolerancia:
-                    on_log(f"📦 Moviendo '{file_name}' → '{folder_name}' (similitud: {score_fmt}%)")
-                    destino = os.path.join(path, folder_name)
-                    shutil.move(origen, os.path.join(destino, file_name))
-                    movidos += 1
+                if folder_name is None:
+                    on_log(t("log_no_folders", file=file_name))
+                    unmoved.append({"file": file_name, "folder": None, "score": None, "reason": "no_folders"})
+                    ignored += 1
                 else:
-                    on_log(f"⚠️ Sin destino para '{file_name}' (similitud: {score_fmt}%)")
-                    no_movidos.append(f"{file_name} (similitud: {score_fmt}%)")
-                    ignorados += 1
+                    score = fuzz.ratio(normalize_text(file_name), normalize_text(folder_name))
+                    if score >= tolerance:
+                        on_log(t("log_moving", file=file_name, folder=folder_name, score=f"{score:.2f}"))
+                        destination = os.path.join(path, folder_name)
+                        shutil.move(source, os.path.join(destination, file_name))
+                        moved += 1
+                    else:
+                        on_log(t("log_no_dest", file=file_name, score=f"{score:.2f}"))
+                        unmoved.append({"file": file_name, "folder": folder_name, "score": score, "reason": "low_score"})
+                        ignored += 1
 
         except Exception as e:
-            no_movidos.append(f"{file_name}: {str(e)}")
-            on_log(f"❌ Error con '{file_name}': {str(e)}")
+            unmoved.append({"file": file_name, "folder": None, "score": None, "reason": "error", "error": str(e)})
+            on_log(t("log_error_file", file=file_name, error=str(e)))
 
-        procesados += 1
-        on_progress(procesados, total)
+        processed += 1
+        on_progress(processed, total)
 
     on_log("\n" + "=" * 50)
-    on_log("✅ PROCESO COMPLETADO")
+    on_log(t("log_complete_header"))
     on_log("=" * 50)
-    on_log(f"📈 Archivos movidos: {movidos}")
-    on_log(f"⭐ Archivos ignorados: {ignorados}")
+    on_log(t("log_moved_count", count=moved))
+    on_log(t("log_ignored_count", count=ignored))
 
-    return {"movidos": movidos, "ignorados": ignorados, "no_movidos": no_movidos}
+    return {"moved": moved, "ignored": ignored, "unmoved": unmoved}
 
 
 def _find_best_folder(file_name, path):
-    """Devuelve el nombre de la carpeta más similar al archivo, o 'ERROR'."""
+    """Return the folder name most similar to `file_name`, or None if none can be found."""
     folder_names = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
-    try:
-        normalized = normalize_text(file_name)
-        folder_name, _score, _ = process.extractOne(normalized, folder_names, scorer=fuzz.ratio)
-        return folder_name
-    except Exception:
-        return "ERROR"
+    if not folder_names:
+        return None
+    normalized = normalize_text(file_name)
+    result = process.extractOne(normalized, folder_names, scorer=fuzz.ratio)
+    if result is None:
+        return None
+    return result[0]
 
 
 def normalize_text(text):
-    """Normaliza un nombre de archivo o carpeta para facilitar la comparación."""
+    """Normalize a file or folder name to make fuzzy comparison more reliable."""
     if "-" in text:
         text = text.split("-", 1)[1]
     if "." in text:

@@ -5,55 +5,81 @@ from tkinter import filedialog, messagebox
 from datetime import datetime
 
 import customtkinter as ctk
+from PIL import Image
 from tkinterdnd2 import TkinterDnD
 
+from core.config import load_config, save_config
 from language.i18n import I18n
-from ui.styles import ACCENT, BG_APP, BG_SURFACE, BG_CARD, BG_INPUT
+from ui.styles import ACCENT, ACCENT_DIM, BG_APP, BG_SURFACE, BG_CARD, BG_INPUT
 from ui.styles import TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED
 from ui.styles import SUCCESS, ERROR, WARNING, BORDER
+from ui.styles import FONT_FAMILY_UI, FONT_FAMILY_MONO
 from ui.components import build_ui, refresh_ui_texts
 from core.sorter import sort_files
 from core.report import save_report
+
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+ICON_PATH = os.path.join(APP_ROOT, "ico", "PinkCat-Sort.ico")
+LOGO_PATH = os.path.join(APP_ROOT, "ico", "PinkCat-Logo.png")
+
+WINDOW_WIDTH = 1100
+WINDOW_HEIGHT = 750
+LOGO_HEIGHT = 48
+
+SUMMARY_WINDOW_WIDTH = 620
+SUMMARY_WINDOW_HEIGHT = 520
 
 
 class FileSorterGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("PinkCat Sort")
-        self.root.geometry("1100x750")
+        self.config = load_config()
+
+        self.t = I18n(self.config["language"])
+
+        self.root.title(self.t("app_title"))
+        self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.root.resizable(False, False)
         self.root.configure(bg=BG_APP)
+        _set_window_icon(self.root)
 
-        self.t = I18n()
+        self.logo_image = _load_logo_image()
 
         self.path_to_sort = tk.StringVar()
-        self.tolerancia = tk.IntVar(value=80)
+        self.tolerance = tk.IntVar(value=80)
         self.is_sorting = False
-        self.archivos_no_movidos = []   # lista de dicts
-        self.log_completo = []
-        self.total_archivos = 0
-        self.archivos_procesados = 0
+        self.unmoved_files = []   # list of dicts
+        self.full_log = []
+        self.total_files = 0
+        self.processed_files = 0
         self._progress_done = 0
         self._progress_total = 0
-        self._result_movidos = 0
-        self._result_ignorados = 0
+        self._result_moved = 0
+        self._result_ignored = 0
 
         build_ui(self)
 
     # ------------------------------------------------------------------
-    # Idioma
+    # Settings
     # ------------------------------------------------------------------
 
     def _on_language_change(self, lang: str):
         self.t.set_language(lang)
+        self.config["language"] = lang
+        save_config(self.config)
         refresh_ui_texts(self)
 
+    def _on_theme_change(self, theme_name: str):
+        self.config["theme"] = theme_name
+        save_config(self.config)
+        messagebox.showinfo(self.t("info_title"), self.t("theme_restart_notice"))
+
     # ------------------------------------------------------------------
-    # Callbacks de UI
+    # UI callbacks
     # ------------------------------------------------------------------
 
     def update_tolerance_label(self, *args):
-        self.tolerance_label.configure(text=f"{self.tolerancia.get()}%")
+        self.tolerance_label.configure(text=f"{self.tolerance.get()}%")
 
     def on_drop(self, event):
         path = event.data.strip('{}')
@@ -70,7 +96,7 @@ class FileSorterGUI:
             self.log_status(f"✓ {self.t('folder_selected_label')} {folder}")
 
     # ------------------------------------------------------------------
-    # Ordenación
+    # Sorting
     # ------------------------------------------------------------------
 
     def start_sorting(self):
@@ -80,14 +106,14 @@ class FileSorterGUI:
         if self.is_sorting:
             return
 
-        self.archivos_no_movidos = []
-        self.log_completo = []
-        self.total_archivos = 0
-        self.archivos_procesados = 0
+        self.unmoved_files = []
+        self.full_log = []
+        self.total_files = 0
+        self.processed_files = 0
         self._progress_done = 0
         self._progress_total = 0
-        self._result_movidos = 0
-        self._result_ignorados = 0
+        self._result_moved = 0
+        self._result_ignored = 0
 
         self.status_text.config(state="normal")
         self.status_text.delete(1.0, tk.END)
@@ -102,7 +128,7 @@ class FileSorterGUI:
             pass
 
         self.is_sorting = True
-        self.sort_btn.configure(state="disabled", fg_color="#4a4a5a")
+        self.sort_btn.configure(state="disabled", fg_color=BORDER, text_color=TEXT_MUTED)
 
         thread = threading.Thread(target=self._run_sorting)
         thread.daemon = True
@@ -111,34 +137,35 @@ class FileSorterGUI:
     def _run_sorting(self):
         result = sort_files(
             path=self.path_to_sort.get(),
-            tolerancia=self.tolerancia.get(),
+            tolerance=self.tolerance.get(),
             on_progress=self._on_progress,
             on_log=self.log_status,
+            t=self.t,
         )
-        self.archivos_no_movidos = result["no_movidos"]
-        self._result_movidos     = result["movidos"]
-        self._result_ignorados   = result["ignorados"]
+        self.unmoved_files = result["unmoved"]
+        self._result_moved   = result["moved"]
+        self._result_ignored = result["ignored"]
         self.root.after(0, self._finish_sorting)
 
-    def _on_progress(self, procesados, total):
-        self._progress_done = procesados
+    def _on_progress(self, processed, total):
+        self._progress_done = processed
         self._progress_total = total
-        self.archivos_procesados = procesados
-        self.total_archivos = total
+        self.processed_files = processed
+        self.total_files = total
         self.root.after(0, self._update_progress_bar)
 
     def _update_progress_bar(self):
-        if self.total_archivos > 0:
-            frac = self.archivos_procesados / self.total_archivos
+        if self.total_files > 0:
+            frac = self.processed_files / self.total_files
             self.progress_bar.set(frac)
             self.progress_label.configure(
                 text=self.t("progress_count",
-                            done=self.archivos_procesados,
-                            total=self.total_archivos)
+                            done=self.processed_files,
+                            total=self.total_files)
             )
 
     def _finish_sorting(self):
-        self.sort_btn.configure(state="normal", fg_color=ACCENT)
+        self.sort_btn.configure(state="normal", fg_color=ACCENT_DIM, text_color="#ffffff")
         self.is_sorting = False
         self._lbl_unmoved_section.pack(anchor=tk.W, pady=(0, 4))
         self.results_frame.pack(fill=tk.BOTH, expand=True)
@@ -146,64 +173,64 @@ class FileSorterGUI:
         self._show_summary_popup()
 
     # ------------------------------------------------------------------
-    # Popup de resumen
+    # Summary popup
     # ------------------------------------------------------------------
 
     def _show_summary_popup(self):
         popup = ctk.CTkToplevel(self.root)
-        popup.title("PinkCat Sort — Resumen")
-        popup.geometry("620x520")
+        popup.title(self.t("summary_window_title"))
+        popup.geometry(f"{SUMMARY_WINDOW_WIDTH}x{SUMMARY_WINDOW_HEIGHT}")
         popup.resizable(False, False)
         popup.configure(fg_color=BG_SURFACE)
+        _set_window_icon(popup)
         popup.grab_set()
         popup.focus_set()
 
         self.root.update_idletasks()
-        rx = self.root.winfo_x() + (self.root.winfo_width()  - 620) // 2
-        ry = self.root.winfo_y() + (self.root.winfo_height() - 520) // 2
-        popup.geometry(f"620x520+{rx}+{ry}")
+        rx = self.root.winfo_x() + (self.root.winfo_width()  - SUMMARY_WINDOW_WIDTH) // 2
+        ry = self.root.winfo_y() + (self.root.winfo_height() - SUMMARY_WINDOW_HEIGHT) // 2
+        popup.geometry(f"{SUMMARY_WINDOW_WIDTH}x{SUMMARY_WINDOW_HEIGHT}+{rx}+{ry}")
 
         def f(size, bold=False):
-            return ctk.CTkFont(family="Segoe UI", size=size,
+            return ctk.CTkFont(family=FONT_FAMILY_UI, size=size,
                                weight="bold" if bold else "normal")
 
-        # ── Cabecera ──────────────────────────────────────────────────
+        # ── Header ────────────────────────────────────────────────────
         header = ctk.CTkFrame(popup, fg_color=BG_CARD, corner_radius=0)
         header.pack(fill=tk.X)
 
         ctk.CTkLabel(
-            header, text="✅  Proceso completado",
+            header, text=self.t("summary_completed_header"),
             font=f(17, bold=True), text_color=SUCCESS
         ).pack(anchor=tk.W, padx=20, pady=(14, 2))
 
         ctk.CTkLabel(
             header,
-            text=(f"{self._result_movidos} movido(s)  ·  "
-                  f"{self._result_ignorados} ignorado(s)  ·  "
-                  f"{self.total_archivos} total"),
+            text=self.t("summary_stats",
+                        moved=self._result_moved,
+                        ignored=self._result_ignored,
+                        total=self.total_files),
             font=f(13), text_color=TEXT_SECONDARY
         ).pack(anchor=tk.W, padx=20, pady=(0, 14))
 
-        # ── Cuerpo ────────────────────────────────────────────────────
+        # ── Body ──────────────────────────────────────────────────────
         body = ctk.CTkFrame(popup, fg_color=BG_SURFACE)
         body.pack(fill=tk.BOTH, expand=True, padx=20, pady=14)
 
-        ignorados = [e for e in self.archivos_no_movidos
-                     if e["reason"] != "py_file"]
-        py_files  = [e for e in self.archivos_no_movidos
-                     if e["reason"] == "py_file"]
+        unmatched = [e for e in self.unmoved_files if e["reason"] != "py_file"]
+        py_files  = [e for e in self.unmoved_files if e["reason"] == "py_file"]
 
-        if not self.archivos_no_movidos:
+        if not self.unmoved_files:
             ctk.CTkLabel(
                 body,
-                text="🎉  ¡Todos los archivos fueron movidos correctamente!",
+                text=self.t("summary_all_moved"),
                 font=f(14), text_color=SUCCESS
             ).pack(expand=True)
         else:
-            if ignorados:
+            if unmatched:
                 ctk.CTkLabel(
                     body,
-                    text=f"Archivos no movidos — similitud insuficiente ({len(ignorados)}):",
+                    text=self.t("summary_unmoved_header", count=len(unmatched)),
                     font=f(13, bold=True), text_color=TEXT_PRIMARY
                 ).pack(anchor=tk.W, pady=(0, 6))
 
@@ -214,7 +241,7 @@ class FileSorterGUI:
                     table_frame,
                     state="disabled",
                     wrap=tk.NONE,
-                    font=("Consolas", 13),
+                    font=(FONT_FAMILY_MONO, 13),
                     bg=BG_CARD,
                     fg=TEXT_PRIMARY,
                     relief=tk.FLAT,
@@ -224,18 +251,10 @@ class FileSorterGUI:
                 )
                 # Tags
                 text.tag_configure("header_file",   foreground=TEXT_PRIMARY,
-                                   font=("Consolas", 13, "bold"))
-                text.tag_configure("arrow",         foreground=TEXT_MUTED,
-                                   font=("Consolas", 13))
-                text.tag_configure("folder",        foreground=TEXT_SECONDARY,
-                                   font=("Consolas", 13))
-                text.tag_configure("bar_fill_ok",   foreground=WARNING)
-                text.tag_configure("bar_fill_low",  foreground=ERROR)
+                                   font=(FONT_FAMILY_MONO, 13, "bold"))
+                text.tag_configure("line_ok",       foreground=WARNING)
+                text.tag_configure("line_low",      foreground=ERROR)
                 text.tag_configure("bar_empty",     foreground=TEXT_MUTED)
-                text.tag_configure("pct_ok",        foreground=WARNING,
-                                   font=("Consolas", 13, "bold"))
-                text.tag_configure("pct_low",       foreground=ERROR,
-                                   font=("Consolas", 13, "bold"))
 
                 sb_y = ctk.CTkScrollbar(table_frame, command=text.yview,
                                         fg_color=BG_CARD, button_color=BORDER,
@@ -249,48 +268,50 @@ class FileSorterGUI:
                 text.config(yscrollcommand=sb_y.set, xscrollcommand=sb_x.set)
                 text.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
 
-                tolerancia = self.tolerancia.get()
+                tolerance = self.tolerance.get()
                 text.config(state="normal")
 
-                for entry in ignorados:
+                for entry in unmatched:
                     score  = entry["score"]
                     folder = entry["folder"]
 
-                    tag_pct = "pct_ok" if (score is not None and score >= tolerancia * 0.85) else "pct_low"
-
-                    # Nombre del archivo
                     text.insert(tk.END, f"  {entry['file']}\n", "header_file")
 
-                    # Frase comparativa
                     if folder and score is not None:
-                        text.insert(tk.END, "  ", "arrow")
-                        text.insert(tk.END, f"{score:.1f}%", tag_pct)
-                        text.insert(tk.END, " de similitud con ", "arrow")
-                        text.insert(tk.END, f"'{folder}'", "folder")
-                        text.insert(tk.END, ", que es la mejor carpeta encontrada.\n", "arrow")
-                        text.insert(tk.END, f"  (se necesita al menos {tolerancia}%)\n\n", "bar_empty")
+                        line_tag = "line_ok" if score >= tolerance * 0.85 else "line_low"
+                        text.insert(
+                            tk.END,
+                            "  " + self.t("summary_similarity_line", score=f"{score:.1f}%", folder=folder) + "\n",
+                            line_tag,
+                        )
+                        text.insert(
+                            tk.END,
+                            "  " + self.t("summary_min_required", tolerance=tolerance) + "\n\n",
+                            "bar_empty",
+                        )
                     elif folder:
-                        text.insert(tk.END, f"  Mejor carpeta encontrada: '{folder}' — sin puntuación.\n\n", "arrow")
+                        text.insert(tk.END, "  " + self.t("summary_folder_no_score", folder=folder) + "\n\n", "bar_empty")
                     else:
-                        text.insert(tk.END, "  No se encontraron carpetas disponibles.\n\n", "arrow")
+                        text.insert(tk.END, "  " + self.t("summary_no_folders") + "\n\n", "bar_empty")
 
                 text.config(state="disabled")
 
             if py_files:
                 ctk.CTkLabel(
                     body,
-                    text=f"Archivos .py ignorados ({len(py_files)}): "
-                         + ", ".join(e["file"] for e in py_files),
+                    text=self.t("summary_py_ignored",
+                                count=len(py_files),
+                                list=", ".join(e["file"] for e in py_files)),
                     font=f(11), text_color=TEXT_MUTED,
                     wraplength=560, justify=tk.LEFT
                 ).pack(anchor=tk.W, pady=(8, 0))
 
-        # ── Botón cerrar ──────────────────────────────────────────────
+        # ── Close button ─────────────────────────────────────────────
         ctk.CTkButton(
-            popup, text="Cerrar",
+            popup, text=self.t("btn_close"),
             command=popup.destroy,
-            fg_color=ACCENT,
-            hover_color="#c91575",
+            fg_color=ACCENT_DIM,
+            hover_color=ACCENT,
             text_color="#ffffff",
             font=f(14, bold=True),
             corner_radius=8,
@@ -298,7 +319,7 @@ class FileSorterGUI:
         ).pack(fill=tk.X, padx=20, pady=(0, 16))
 
     # ------------------------------------------------------------------
-    # Log y resultados
+    # Log and results
     # ------------------------------------------------------------------
 
     def log_status(self, message):
@@ -313,25 +334,23 @@ class FileSorterGUI:
             self.status_text.tag_add("accent",  f"{line_num}.0", f"{line_num}.end")
         self.status_text.see(tk.END)
         self.status_text.config(state="disabled")
-        self.log_completo.append(message)
+        self.full_log.append(message)
 
     def _show_unmoved_files(self):
         self.unmoved_text.config(state="normal")
         self.unmoved_text.delete(1.0, tk.END)
-        if not self.archivos_no_movidos:
-            self.unmoved_text.insert(
-                tk.END, "✓ Todos los archivos fueron procesados correctamente"
-            )
+        if not self.unmoved_files:
+            self.unmoved_text.insert(tk.END, self.t("unmoved_all_ok"))
             self.unmoved_text.tag_add("success", "1.0", tk.END)
         else:
-            for e in self.archivos_no_movidos:
+            for e in self.unmoved_files:
                 if e["reason"] == "low_score":
                     self.unmoved_text.insert(
                         tk.END,
                         f"• {e['file']}  →  {e['folder']}  ({e['score']:.1f}%)\n"
                     )
                 elif e["reason"] == "py_file":
-                    self.unmoved_text.insert(tk.END, f"• {e['file']}  (archivo .py)\n")
+                    self.unmoved_text.insert(tk.END, f"• {e['file']}  ({self.t('unmoved_py_file')})\n")
                 elif e["reason"] == "error":
                     self.unmoved_text.insert(
                         tk.END, f"• {e['file']}  ❌ {e.get('error', '')}\n"
@@ -341,17 +360,37 @@ class FileSorterGUI:
         self.unmoved_text.config(state="disabled")
 
     def export_report(self):
-        if not self.log_completo:
+        if not self.full_log:
             return
         file_path = filedialog.asksaveasfilename(
             defaultextension=".txt",
-            filetypes=[("Archivos de texto", "*.txt"), ("Todos los archivos", "*.*")],
-            initialfile=f"reporte_ordenacion_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            initialfile=f"sort_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
         )
         if file_path:
             try:
-                save_report(file_path, self.log_completo, self.archivos_no_movidos)
-                messagebox.showinfo("OK", f"Reporte exportado correctamente a:\n{file_path}")
+                save_report(file_path, self.full_log, self.unmoved_files, self.t)
+                messagebox.showinfo(self.t("info_title"), self.t("export_success_msg", path=file_path))
             except Exception as e:
                 messagebox.showerror(self.t("error_title"),
-                                     f"No se pudo exportar el reporte:\n{str(e)}")
+                                     self.t("export_error_msg", error=str(e)))
+
+
+# ------------------------------------------------------------------
+# Window chrome helpers
+# ------------------------------------------------------------------
+
+def _set_window_icon(window) -> None:
+    if os.path.isfile(ICON_PATH):
+        try:
+            window.iconbitmap(ICON_PATH)
+        except tk.TclError:
+            pass
+
+
+def _load_logo_image():
+    if not os.path.isfile(LOGO_PATH):
+        return None
+    image = Image.open(LOGO_PATH)
+    width = int(LOGO_HEIGHT * (image.width / image.height))
+    return ctk.CTkImage(light_image=image, dark_image=image, size=(width, LOGO_HEIGHT))

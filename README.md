@@ -20,7 +20,8 @@ This serves two purposes: it saves the teacher from sorting files manually, and 
 - **Real-time progress** — progress bar and status log during sorting
 - **Summary window** — after sorting, a separate window lists every unmatched file, its best candidate folder, and the similarity score
 - **Export report** — saves the full log as `.txt`
-- **Multi-language UI** — switch between 8 languages from the interface (Español, English, Português, Français, Deutsch, Italiano, 日本語, and Nyan 🐱)
+- **Multi-language UI** — switch between 8 languages from the Settings menu (Español, English, Português, Français, Deutsch, Italiano, 日本語, and Nyan 🐱), applied instantly without restarting
+- **Themeable interface** — choose between Pink (default), Green, and Professional color themes from the Settings menu (takes effect on restart)
 - **`.py` files are always ignored**
 
 ---
@@ -31,6 +32,7 @@ This serves two purposes: it saves the teacher from sorting files manually, and 
 - `customtkinter`
 - `tkinterdnd2`
 - `rapidfuzz`
+- `pillow`
 
 ---
 
@@ -38,9 +40,11 @@ This serves two purposes: it saves the teacher from sorting files manually, and 
 
 1. Select a folder using the *Browse* button or drag it onto the drop zone.
 2. Adjust the tolerance slider. **80–90% is recommended.**
-3. Click **Ordenar Archivos**.
+3. Click **Sort Files**.
 4. A summary window will open showing which files were moved and which weren't, with similarity details for each unmatched file.
 5. Optionally export the report.
+
+Language and theme are available under the **Settings** menu at the top of the window.
 
 ---
 
@@ -49,6 +53,7 @@ This serves two purposes: it saves the teacher from sorting files manually, and 
 - Only files in the **first level** of the selected folder are processed — subfolders are not entered.
 - Files with no folder match above the threshold appear in the unmatched section of the report.
 - To add a new language, simply add a column to `language/translations.csv` — no code changes needed.
+- Theme and language preferences are saved to `%APPDATA%\PinkCatSort\config.json` and restored on next launch.
 
 ---
 

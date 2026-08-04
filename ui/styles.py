@@ -1,66 +1,68 @@
 """
-ui/styles.py — Paleta y constantes de estilo para PinkCat Sort (CustomTkinter).
+ui/styles.py — Style constants for PinkCat Sort (CustomTkinter).
 
-Toda la configuración visual vive aquí.  Los componentes importan desde este
-módulo; ningún color o fuente se define inline en components.py.
+Colors come exclusively from the active PinkCat Design System theme
+(ui/theme_loader.get_theme), selected via the externalized config
+(core/config.load_config). No color is hardcoded here; only layout
+constants (padding, window-specific radii) that are this project's own
+and intentionally live outside the theme.
 """
 
 import customtkinter as ctk
 
-# ── Apariencia global ────────────────────────────────────────────────────────
+from core.config import load_config
+from ui.theme_loader import get_theme
 
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("blue")   # base que luego sobreescribimos
+ctk.set_appearance_mode("light" if load_config()["theme"] == "pro" else "dark")
+ctk.set_default_color_theme("blue")  # base overridden below by the active theme
 
-# ── Paleta ───────────────────────────────────────────────────────────────────
+_config = load_config()
+_theme_name = _config["theme"]
+_THEME = get_theme(_theme_name)
 
-# Fondos
-BG_APP         = "#1a1a2e"   # fondo raíz — azul oscuro casi negro
-BG_SURFACE     = "#16213e"   # superficies elevadas (frames)
-BG_CARD        = "#0f3460"   # tarjetas / paneles con contenido
-BG_INPUT       = "#1e2a45"   # campos de texto y entradas
-BG_DROP        = "#0d2137"   # zona de drop
+# ── Palette (sourced from the active theme) ─────────────────────────────────
 
-# Acento principal — magenta cálido
-ACCENT         = "#e91e8c"   # botón primario, resaltados
-ACCENT_HOVER   = "#c91575"
-ACCENT_LIGHT   = "#ff4db8"   # versión clara para hover en iconos
+BG_APP         = _THEME["bg"]
+BG_SURFACE     = _THEME["panel"]
+BG_CARD        = _THEME["card"]
+BG_INPUT       = _THEME["card_hover"]
+BG_DROP        = _THEME["bg"]
 
-# Acento secundario — cian
-ACCENT2        = "#00d4ff"   # progress bar, etiquetas de similitud
-ACCENT2_DIM    = "#0095b3"
+ACCENT         = _THEME["accent"]
+ACCENT_DIM     = _THEME["accent_dim"]
+ACCENT_HOVER   = _THEME["accent"]
+ACCENT_LIGHT   = _THEME["accent"]
 
-# Textos
-TEXT_PRIMARY   = "#f0f0f8"
-TEXT_SECONDARY = "#9aaccc"
-TEXT_MUTED     = "#5d6f8a"
+ACCENT2        = _THEME["info"]  # secondary/informational highlight color
 
-# Estados
-SUCCESS        = "#00e5a0"
-SUCCESS_HOVER  = "#00b87e"
-ERROR          = "#ff4d6d"
-WARNING        = "#ffbb33"
+TEXT_PRIMARY   = _THEME["text"]
+TEXT_SECONDARY = _THEME["text_dim"]
+TEXT_MUTED     = _THEME["text_muted"]
 
-# Bordes
-BORDER         = "#1e3a5a"
-BORDER_FOCUS   = ACCENT
+SUCCESS        = _THEME["success"]
+SUCCESS_HOVER  = _THEME["success"]
+ERROR          = _THEME["danger"]
+WARNING        = _THEME["warning"]
 
-# ── Tipografía ───────────────────────────────────────────────────────────────
+BORDER         = _THEME["border"]
 
-FONT_TITLE     = ("Segoe UI Semibold",  26)
-FONT_SUBTITLE  = ("Segoe UI",          15)
-FONT_LABEL     = ("Segoe UI",          14, "bold")
-FONT_BODY      = ("Segoe UI",          13)
-FONT_SMALL     = ("Segoe UI",          12)
-FONT_MONO      = ("Consolas",          12)
-FONT_COUNTER   = ("Segoe UI",          16, "bold")
-FONT_PCT       = ("Segoe UI Semibold", 17)
+# ── Typography ───────────────────────────────────────────────────────────────
+# Font family follows the active theme (Consolas for Green/Pink, Segoe UI for
+# Pro); absolute sizes are this project's own choice, outside the theme.
 
-# ── Radios y espaciado ───────────────────────────────────────────────────────
+FONT_FAMILY_TITLE = "Segoe UI Semibold" if _theme_name == "pro" else "Consolas"
+FONT_FAMILY_UI     = "Segoe UI"
+FONT_FAMILY_MONO   = "Consolas"
 
-RADIUS_SM      = 6
-RADIUS_MD      = 10
-RADIUS_LG      = 14
+# ── Radii and spacing ────────────────────────────────────────────────────────
+# Card/button radii come from the theme. RADIUS_LG is a project-specific
+# layout radius for large outer panels (header, drop zone) — not one of the
+# two theme-defined radii, so it stays outside the theme by design.
+
+RADIUS_SM      = _THEME["corner_radius_btn"]
+RADIUS_MD      = _THEME["corner_radius_card"]
+RADIUS_LG      = _THEME["corner_radius_card"] + 4
+
 PAD_XS         = 4
 PAD_SM         = 8
 PAD_MD         = 14
@@ -68,10 +70,10 @@ PAD_LG         = 20
 PAD_XL         = 28
 
 
-# ── Helper: badge de estado ──────────────────────────────────────────────────
+# ── Helper: status badge ─────────────────────────────────────────────────────
 
 def status_color(score: float, threshold: float) -> str:
-    """Devuelve un color semáforo según la puntuación de similitud."""
+    """Return a traffic-light color for a similarity score against a threshold."""
     if score >= threshold:
         return SUCCESS
     if score >= threshold * 0.85:

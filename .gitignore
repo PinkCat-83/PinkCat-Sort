@@ -5,5 +5,8 @@
 # Ignorar todos los archivos y carpetas que empiezan por guion bajo
 _*
 
+# Ignorar la carpeta local de Claude Code (config/sesión específica de esta máquina)
+.claude/
+
 # Ignorar todos los archivos con extensión .bat
 *.bat

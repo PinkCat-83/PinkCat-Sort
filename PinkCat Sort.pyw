@@ -1,10 +1,10 @@
-import customtkinter as ctk
 from tkinterdnd2 import TkinterDnD
 from app import FileSorterGUI
 
 
 def main():
-    ctk.set_appearance_mode("dark")
+    # Appearance mode (dark/light) is set by ui/styles.py based on the
+    # active theme — do not override it here.
     root = TkinterDnD.Tk()
     FileSorterGUI(root)
     root.mainloop()
